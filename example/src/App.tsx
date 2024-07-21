@@ -253,11 +253,9 @@ const App = () => {
               const photo = camera.current.takePhoto();
               console.log(photo);
               setImage(photo as string);
-              const base64URL = image;
-              console.log('before first if...');
+              const base64URL = photo;
               console.log(typeof base64URL);
               if (typeof base64URL === 'string') {
-                console.log('entered first if');
                 // Extracting metadata
 
                 // base64ToArrayBuffer must pass base64URL that has the geolocation tags injected in metadata
