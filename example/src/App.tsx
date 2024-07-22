@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import EXIF from 'exif-js'; // Import the EXIF library
+import piexif from 'piexifjs';
+import * as opencage from 'opencage-api-client';
 
 import { Camera, CameraType } from './Camera';
 
@@ -142,7 +144,33 @@ const FullScreenImagePreview = styled.div<{ image: string | null }>`
   background-position: center;
 `;
 
+interface GPSData {
+  [key: number]: any;
+}
+
+interface GeocodeResponse {
+  status: {
+    code: number;
+    message: string;
+  };
+  results: Array<{
+    formatted: string;
+    components: {
+      road?: string;
+      [key: string]: any;
+    };
+    annotations: {
+      timezone: {
+        name: string;
+      };
+    };
+  }>;
+  total_results: number;
+}
+
 const App = () => {
+  const [formattedLocationData, setFormattedLocationData] = useState<any>(null);
+  const [convertCoordinates, setConvertCoordinates] = useState<boolean>(false);
   const [location, setLocation] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [metadata, setMetadata] = useState<any>(null);
@@ -168,7 +196,7 @@ const App = () => {
     const getLocation = async () => {
       if (!navigator.geolocation) {
         setError('Geolocation is not supported by your browser');
-        return;
+        return error;
       }
 
       navigator.geolocation.getCurrentPosition(
@@ -178,6 +206,8 @@ const App = () => {
             longitude: position.coords.longitude,
           };
           setLocation(loc);
+          setConvertCoordinates(true);
+          console.log('location set');
         },
         (error) => {
           setError(`Error: ${error.message}`);
@@ -187,6 +217,34 @@ const App = () => {
 
     getLocation();
   }, []);
+
+  //Converts coordinates to location (street, country, area, etc.)
+
+  useEffect(() => {
+    const coordinatesToLocation = async () => {
+      if (convertCoordinates) {
+        const query = `${location.latitude}, ${location.longitude}`;
+
+        console.log('accessing geocode...');
+        opencage.geocode({ q: query, key: 'c880806970d24a4d95b99d6726f821e3' }).then((data: GeocodeResponse) => {
+          console.log('accessesd');
+
+          // console.log(JSON.stringify(data));
+          if (data.status.code === 200 && data.results.length > 0) {
+            const place = data.results[0];
+            setFormattedLocationData(place.formatted);
+            console.log(place.formatted);
+            console.log(place.components.road);
+            console.log(place.annotations.timezone.name);
+          } else {
+            console.log('status', data.status.message);
+            console.log('total_results', data.total_results);
+          }
+        });
+      }
+    };
+    coordinatesToLocation();
+  }, [convertCoordinates]);
 
   const base64ToArrayBuffer = (base64: string) => {
     const binaryString = window.atob(base64.split(',')[1]);
@@ -255,11 +313,46 @@ const App = () => {
               setImage(photo as string);
               const base64URL = photo;
               console.log(typeof base64URL);
+
               if (typeof base64URL === 'string') {
-                // Extracting metadata
+                // Initiating geolocation tags
+                const zeroth: { [key: number]: any } = {};
+                const exif: { [key: number]: any } = {};
+                const gps: GPSData = {};
+
+                // Populating geolocation data
+
+                if (location) {
+                  gps[piexif.GPSIFD.GPSLatitude] = piexif.GPSHelper.degToDmsRational(location.latitude);
+                  gps[piexif.GPSIFD.GPSLongitude] = piexif.GPSHelper.degToDmsRational(location.longitude);
+                  gps[piexif.GPSIFD.GPSLatitudeRef] = location.latitude >= 0 ? 'N' : 'S';
+                  gps[piexif.GPSIFD.GPSLongitudeRef] = location.longitude >= 0 ? 'E' : 'W';
+
+                  //   const latitudeDeg = gps[piexif.GPSIFD.GPSLatitude][0][0];
+                  //   const latitudeMin = gps[piexif.GPSIFD.GPSLatitude][1][0];
+                  //   const latitudeSec = gps[piexif.GPSIFD.GPSLatitude][2][0];
+                  //   const latitudeDirection = gps[piexif.GPSIFD.GPSLatitudeRef];
+                  //   const latitudeDeg2 = gps[piexif.GPSIFD.GPSLatitude][0][1];
+                  //   const latitudeMin2 = gps[piexif.GPSIFD.GPSLatitude][1][1];
+                  //   const latitudeSec2 = gps[piexif.GPSIFD.GPSLatitude][2][1];
+
+                  //   const longitudeDeg = gps[piexif.GPSIFD.GPSLongitude][0][0];
+                  //   const longitudeMin = gps[piexif.GPSIFD.GPSLongitude][1][0];
+                  //   const longitudeSec = gps[piexif.GPSIFD.GPSLongitude][2][0];
+                  //   const longitudeDeg2 = gps[piexif.GPSIFD.GPSLongitude][0][1];
+                  //   const longitudeMin2 = gps[piexif.GPSIFD.GPSLongitude][1][1];
+                  //   const longitudeSec2 = gps[piexif.GPSIFD.GPSLongitude][2][1];
+                  //   const longitudeDirection = gps[piexif.GPSIFD.GPSLongitudeRef];
+                }
+
+                const exifObj = { '0th': zeroth, Exif: exif, GPS: gps };
+                const exifBytes = piexif.dump(exifObj);
+
+                // Insert EXIF metadata into the Base64 image
+                const newBase64 = piexif.insert(exifBytes, base64URL);
 
                 // base64ToArrayBuffer must pass base64URL that has the geolocation tags injected in metadata
-                const arrayBuffer = base64ToArrayBuffer(base64URL);
+                const arrayBuffer = base64ToArrayBuffer(newBase64);
 
                 const initiatingBlob = new Blob([arrayBuffer]);
                 const stringBlob = initiatingBlob as unknown as string;
@@ -301,6 +394,7 @@ const App = () => {
             <div>
               <h3>Metadata</h3>
               <pre>{JSON.stringify(metadata, null, 2)}</pre>
+              <p>{formattedLocationData}</p>
             </div>
           )}
         </div>
