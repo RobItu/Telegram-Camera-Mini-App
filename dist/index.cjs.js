@@ -233,14 +233,6 @@ var Camera = React__default.forwardRef(function (_a, ref) {
             React__default.createElement(Canvas, { ref: canvas }))));
 });
 console.log('HERE I AM');
-console.log('HERE I AM');
-console.log('HERE I AM');
-console.log('HERE I AM');
-console.log('HERE I AM');
-console.log('HERE I AM');
-console.log('HERE I AM');
-console.log('HERE I AM');
-console.log('HERE I AM');
 Camera.displayName = 'Camera';
 var shouldSwitchToCamera = function (currentFacingMode) { return __awaiter(void 0, void 0, void 0, function () {
     var cameras;
