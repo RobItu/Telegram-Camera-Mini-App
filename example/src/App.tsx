@@ -169,6 +169,7 @@ interface GeocodeResponse {
 }
 
 const App = () => {
+  const [askForlocation, setAskForLocation] = useState<boolean>(false);
   const [formattedLocationData, setFormattedLocationData] = useState<any>(null);
   const [convertCoordinates, setConvertCoordinates] = useState<boolean>(false);
   const [location, setLocation] = useState<any>(null);
@@ -184,39 +185,53 @@ const App = () => {
 
   // Get mediaDevices
   useEffect(() => {
-    (async () => {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter((i) => i.kind == 'videoinput');
-      setDevices(videoDevices);
-    })();
-  });
+    const requestCameraAccess = async () => {
+      try {
+        console.log('Access Camera...');
+        await navigator.mediaDevices.getUserMedia({ video: true });
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter((i) => i.kind === 'videoinput');
+        setDevices(videoDevices);
+        setAskForLocation(true); // Proceed to ask for location access
+        console.log('Camera Granted');
+      } catch (err) {
+        setError('Camera access denied');
+      }
+    };
+
+    requestCameraAccess();
+  }, []);
 
   // Get Location Tags
   useEffect(() => {
     const getLocation = async () => {
+      console.log('Accessing Location...');
       if (!navigator.geolocation) {
         setError('Geolocation is not supported by your browser');
         return error;
       }
 
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const loc = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          };
-          setLocation(loc);
-          setConvertCoordinates(true);
-          console.log('location set');
-        },
-        (error) => {
-          setError(`Error: ${error.message}`);
-        },
-      );
+      if (askForlocation) {
+        console.log('Accesssed Location');
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const loc = {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            };
+            setLocation(loc);
+            setConvertCoordinates(true);
+            console.log('location set');
+          },
+          (error) => {
+            setError(`Error: ${error.message}`);
+          },
+        );
+      }
     };
 
     getLocation();
-  }, []);
+  }, [askForlocation]);
 
   //Converts coordinates to location (street, country, area, etc.)
 
