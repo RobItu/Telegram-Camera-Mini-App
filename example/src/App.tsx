@@ -169,6 +169,7 @@ interface GeocodeResponse {
 }
 
 const App = () => {
+  const [counter, setCounter] = useState<number>(0);
   const [askForlocation, setAskForLocation] = useState<boolean>(false);
   const [formattedLocationData, setFormattedLocationData] = useState<any>(null);
   const [convertCoordinates, setConvertCoordinates] = useState<boolean>(false);
@@ -186,16 +187,19 @@ const App = () => {
   // Get mediaDevices
   useEffect(() => {
     const requestCameraAccess = async () => {
-      try {
-        console.log('Access Camera...');
-        await navigator.mediaDevices.getUserMedia({ video: true });
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoDevices = devices.filter((i) => i.kind === 'videoinput');
-        setDevices(videoDevices);
-        setAskForLocation(true); // Proceed to ask for location access
-        console.log('Camera Granted');
-      } catch (err) {
-        setError('Camera access denied');
+      if (counter == 0) {
+        try {
+          console.log('Access Camera...');
+          await navigator.mediaDevices.getUserMedia({ video: true });
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const videoDevices = devices.filter((i) => i.kind === 'videoinput');
+          setDevices(videoDevices);
+          setAskForLocation(true); // Proceed to ask for location access
+          setCounter(1);
+          console.log('Camera Granted');
+        } catch (err) {
+          setError('Camera access denied');
+        }
       }
     };
 
@@ -205,14 +209,13 @@ const App = () => {
   // Get Location Tags
   useEffect(() => {
     const getLocation = async () => {
-      console.log('Accessing Location...');
       if (!navigator.geolocation) {
         setError('Geolocation is not supported by your browser');
         return error;
       }
 
       if (askForlocation) {
-        console.log('Accesssed Location');
+        console.log('Accessing Location...');
         navigator.geolocation.getCurrentPosition(
           (position) => {
             const loc = {
