@@ -101,7 +101,6 @@ var Camera = React__default.forwardRef(function (_a, ref) {
     var _p = React.useState(false), torch = _p[0], setTorch = _p[1];
     var mounted = React.useRef(false);
     React.useEffect(function () {
-        // Used to prevent memory leaks and control async operations. Works in tangent with other UseEffects
         mounted.current = true;
         return function () {
             mounted.current = false;
@@ -139,29 +138,20 @@ var Camera = React__default.forwardRef(function (_a, ref) {
     React.useEffect(function () {
         switchTorch(torch);
     }, [torch]);
-    //useImperativeHandle allows parent components to interact with the defined functions/method (takePhoto in this case)
-    // This means that when the component (Camera in this case line 13) is ref'd, the parent component that ref'd  it can trigger the method/function defined
-    // inside the useImperativeHandle. Refer to the explanation of refs in types.ts to understand more.
     React.useImperativeHandle(ref, function () { return ({
         takePhoto: function (type) {
             var _a, _b, _c, _d, _e;
             if (numberOfCameras < 1) {
                 throw new Error(errorMessages.noCameraAccessible);
             }
-            //Checks to see if canvas is null. When a ref object is made, it has a current property. It was initially set
-            // to null in line 32. When the object renders/mounts the current status is changed to a value.
             if (canvas === null || canvas === void 0 ? void 0 : canvas.current) {
-                //player is the actual video display player
                 var playerWidth = ((_a = player === null || player === void 0 ? void 0 : player.current) === null || _a === void 0 ? void 0 : _a.videoWidth) || 1280;
                 var playerHeight = ((_b = player === null || player === void 0 ? void 0 : player.current) === null || _b === void 0 ? void 0 : _b.videoHeight) || 720;
                 var playerAR = playerWidth / playerHeight;
-                // Canvas is the div that holds the player. AR stands for Aspect Ratio
                 var canvasWidth = ((_c = container === null || container === void 0 ? void 0 : container.current) === null || _c === void 0 ? void 0 : _c.offsetWidth) || 1280;
                 var canvasHeight = ((_d = container === null || container === void 0 ? void 0 : container.current) === null || _d === void 0 ? void 0 : _d.offsetHeight) || 1280;
                 var canvasAR = canvasWidth / canvasHeight;
                 var sX = void 0, sY = void 0, sW = void 0, sH = void 0, imgData = void 0;
-                //The code snippet is preparing to draw a portion of a video player onto a canvas. It begins by comparing the aspect ratios of the video player and the canvas container to decide how to best fit the video within the canvas. Depending on whether the video player aspect ratio is greater than the canvas aspect ratio or not, it calculates different values for the source dimensions (sW, sH) and source coordinates (sX, sY). These values determine which part of the video to draw and how to scale it.
-                //Once the values are set, it adjusts the canvas size to match the calculated width and height. It ensures that the 2D drawing context of the canvas is initialized. Finally, it draws the calculated portion of the video onto the canvas, effectively copying part of the video frame to the canvas.
                 if (playerAR > canvasAR) {
                     sH = playerHeight;
                     sW = playerHeight * canvasAR;
@@ -179,7 +169,6 @@ var Camera = React__default.forwardRef(function (_a, ref) {
                 if (!context.current) {
                     context.current = canvas.current.getContext('2d', { willReadFrequently: true });
                 }
-                // This draws the frame of the video player onto the canvas. Kind of like taking a screenshot.
                 if (context.current && (player === null || player === void 0 ? void 0 : player.current)) {
                     context.current.drawImage(player.current, sX, sY, sW, sH, 0, 0, sW, sH);
                 }
@@ -243,6 +232,15 @@ var Camera = React__default.forwardRef(function (_a, ref) {
                 } }),
             React__default.createElement(Canvas, { ref: canvas }))));
 });
+console.log('HERE I AM');
+console.log('HERE I AM');
+console.log('HERE I AM');
+console.log('HERE I AM');
+console.log('HERE I AM');
+console.log('HERE I AM');
+console.log('HERE I AM');
+console.log('HERE I AM');
+console.log('HERE I AM');
 Camera.displayName = 'Camera';
 var shouldSwitchToCamera = function (currentFacingMode) { return __awaiter(void 0, void 0, void 0, function () {
     var cameras;

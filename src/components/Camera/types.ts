@@ -29,6 +29,8 @@ export type CameraType = React.ForwardRefExoticComponent<CameraProps & React.Ref
   torchSupported: boolean;
 };
 
+
+
 // Refs are a type of hook that do not cause the component to re-render.
 // You can assign certain elements or components to refs so that you may interact with them directly.
 // For example, let's say you have an <input> tag which is an element/component. You can create a ref variable like this:
