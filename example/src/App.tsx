@@ -169,7 +169,7 @@ interface GeocodeResponse {
 }
 
 const App = () => {
-  const [askForlocation, setAskForLocation] = useState<boolean>(false);
+  const [askPermission, setaskPermission] = useState<boolean>(false);
   const [formattedLocationData, setFormattedLocationData] = useState<any>(null);
   const [convertCoordinates, setConvertCoordinates] = useState<boolean>(false);
   const [location, setLocation] = useState<any>(null);
@@ -185,22 +185,21 @@ const App = () => {
 
   // Get mediaDevices
   useEffect(() => {
-    const requestCameraAccess = async () => {
-      try {
-        console.log('Access Camera...');
-        await navigator.mediaDevices.getUserMedia({ video: true });
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoDevices = devices.filter((i) => i.kind === 'videoinput');
-        setDevices(videoDevices);
-        console.log('Camera Granted');
-        setTimeout(() => setAskForLocation(true), 1000);
-      } catch (err) {
-        setError('Camera access denied');
-      }
-    };
-
-    requestCameraAccess();
-  }, []);
+    if (askPermission) {
+      const requestCameraAccess = async () => {
+        try {
+          console.log('Access Camera...');
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const videoDevices = devices.filter((i) => i.kind === 'videoinput');
+          setDevices(videoDevices);
+          console.log('Camera Granted');
+        } catch (err) {
+          setError('Camera access denied');
+        }
+      };
+      requestCameraAccess();
+    }
+  }, [askPermission]);
 
   // Get Location Tags
   useEffect(() => {
@@ -210,27 +209,21 @@ const App = () => {
         return error;
       }
 
-      if (askForlocation) {
-        console.log('Accessing Location...');
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const loc = {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-            };
-            setLocation(loc);
-            setConvertCoordinates(true);
-            console.log('location set');
-          },
-          (error) => {
-            setError(`Error: ${error.message}`);
-          },
-        );
-      }
+      console.log('Accessing Location...');
+      navigator.geolocation.getCurrentPosition((position) => {
+        const loc = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        };
+        setLocation(loc);
+        setConvertCoordinates(true);
+        console.log('location set');
+        setaskPermission(true);
+      });
     };
 
-    getLocation();
-  }, [askForlocation]);
+    setTimeout(() => getLocation(), 1000);
+  }, []);
 
   //Converts coordinates to location (street, country, area, etc.)
 
