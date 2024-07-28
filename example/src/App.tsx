@@ -223,7 +223,7 @@ const App = () => {
       });
     };
 
-    setTimeout(() => getLocation(), 10000);
+    setTimeout(() => getLocation(), 5000);
   }, []);
 
   //Converts coordinates to location (street, country, area, etc.)
