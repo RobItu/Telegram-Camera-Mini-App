@@ -199,7 +199,7 @@ const App = () => {
       };
       requestCameraAccess();
     }
-  }, [askPermission]);
+  }, []);
 
   // Get Location Tags
   useEffect(() => {
@@ -222,8 +222,8 @@ const App = () => {
       });
     };
 
-    setTimeout(() => getLocation(), 1000);
-  }, []);
+    getLocation();
+  }, [devices]);
 
   //Converts coordinates to location (street, country, area, etc.)
 
