@@ -169,7 +169,7 @@ interface GeocodeResponse {
 }
 
 const App = () => {
-  const [askPermission, setaskPermission] = useState<boolean>(false);
+  // const [askPermission, setaskPermission] = useState<boolean>(false);
   const [formattedLocationData, setFormattedLocationData] = useState<any>(null);
   const [convertCoordinates, setConvertCoordinates] = useState<boolean>(false);
   const [location, setLocation] = useState<any>(null);
@@ -184,21 +184,23 @@ const App = () => {
   const [torchToggled, setTorchToggled] = useState<boolean>(false);
 
   // Get mediaDevices
+  // problem: when the app starts, it will get camera access and this useEffect will start at the same time
+  // This useeffect will call locations functions automatically and cause the same problems we had.
   useEffect(() => {
-    if (askPermission) {
-      const requestCameraAccess = async () => {
-        try {
-          console.log('Access Camera...');
-          const devices = await navigator.mediaDevices.enumerateDevices();
-          const videoDevices = devices.filter((i) => i.kind === 'videoinput');
-          setDevices(videoDevices);
-          console.log('Camera Granted');
-        } catch (err) {
-          setError('Camera access denied');
-        }
-      };
-      requestCameraAccess();
-    }
+    const requestCameraAccess = async () => {
+      console.log('mediaDevices: ', await navigator.mediaDevices.enumerateDevices());
+      try {
+        console.log('Access Camera...');
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        console.log('mediaDevice2s: ', await navigator.mediaDevices.enumerateDevices());
+        const videoDevices = devices.filter((i) => i.kind === 'videoinput');
+        setDevices(videoDevices);
+        console.log('Camera Granted');
+      } catch (err) {
+        setError('Camera access denied');
+      }
+    };
+    requestCameraAccess();
   }, []);
 
   // Get Location Tags
@@ -218,12 +220,11 @@ const App = () => {
         setLocation(loc);
         setConvertCoordinates(true);
         console.log('location set');
-        setaskPermission(true);
       });
     };
 
-    getLocation();
-  }, [devices]);
+    setTimeout(() => getLocation(), 10000);
+  }, []);
 
   //Converts coordinates to location (street, country, area, etc.)
 
