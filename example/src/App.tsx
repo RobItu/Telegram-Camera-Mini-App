@@ -169,12 +169,10 @@ interface GeocodeResponse {
 }
 
 const App = () => {
-  // const [askPermission, setaskPermission] = useState<boolean>(false);
-  const [formattedLocationData, setFormattedLocationData] = useState<any>(null);
+  const [askPermission, setaskPermission] = useState<boolean>(false);
   const [convertCoordinates, setConvertCoordinates] = useState<boolean>(false);
   const [location, setLocation] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [metadata, setMetadata] = useState<any>(null);
   const [numberOfCameras, setNumberOfCameras] = useState(0);
   const [image, setImage] = useState<string | null>(null);
   const [showImage, setShowImage] = useState<boolean>(false);
@@ -188,11 +186,7 @@ const App = () => {
   // This useeffect will call locations functions automatically and cause the same problems we had.
   useEffect(() => {
     const requestCameraAccess = async () => {
-      console.log('mediaDevices: ', await navigator.mediaDevices.enumerateDevices());
       try {
-        console.log('Access Camera...');
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        console.log('mediaDevice2s: ', await navigator.mediaDevices.enumerateDevices());
         const videoDevices = devices.filter((i) => i.kind === 'videoinput');
         setDevices(videoDevices);
         console.log('Camera Granted');
@@ -201,7 +195,7 @@ const App = () => {
       }
     };
     requestCameraAccess();
-  }, []);
+  }, [askPermission]);
 
   // Get Location Tags
   useEffect(() => {
@@ -219,11 +213,11 @@ const App = () => {
         };
         setLocation(loc);
         setConvertCoordinates(true);
-        console.log('location set');
+        setaskPermission(true);
       });
     };
 
-    setTimeout(() => getLocation(), 5000);
+    setTimeout(() => getLocation(), 3000);
   }, []);
 
   //Converts coordinates to location (street, country, area, etc.)
@@ -233,14 +227,10 @@ const App = () => {
       if (convertCoordinates) {
         const query = `${location.latitude}, ${location.longitude}`;
 
-        console.log('accessing geocode...');
         opencage.geocode({ q: query, key: 'c880806970d24a4d95b99d6726f821e3' }).then((data: GeocodeResponse) => {
-          console.log('accessesd');
-
           // console.log(JSON.stringify(data));
           if (data.status.code === 200 && data.results.length > 0) {
             const place = data.results[0];
-            setFormattedLocationData(place.formatted);
             console.log(place.formatted);
             console.log(place.components.road);
             console.log(place.annotations.timezone.name);
@@ -317,6 +307,8 @@ const App = () => {
             console.log('lat/long coordinates: ', location);
             if (camera.current) {
               const photo = camera.current.takePhoto();
+              const timestamp = new Date().toISOString();
+              console.log('timestamp: ', timestamp);
               console.log(photo);
               setImage(photo as string);
               const base64URL = photo;
@@ -369,7 +361,6 @@ const App = () => {
                   const metadata = EXIF.getAllTags(initiatingBlob);
                   console.log('metadata:');
                   console.log(metadata);
-                  setMetadata(metadata); // Update the state with the extracted metadata
                 });
               }
             }
@@ -395,17 +386,6 @@ const App = () => {
             }
           }}
         />
-
-        <div>
-          {image && <img src={image} alt="Taken photo" />}
-          {metadata && (
-            <div>
-              <h3>Metadata</h3>
-              <pre>{JSON.stringify(metadata, null, 2)}</pre>
-              <p>{formattedLocationData}</p>
-            </div>
-          )}
-        </div>
       </Control>
     </Wrapper>
   );
