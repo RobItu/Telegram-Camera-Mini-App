@@ -169,13 +169,10 @@ interface GeocodeResponse {
 }
 
 const App = () => {
-  const [counter, setCounter] = useState<number>(0);
-  const [askForlocation, setAskForLocation] = useState<boolean>(false);
-  const [formattedLocationData, setFormattedLocationData] = useState<any>(null);
+  const [askPermission, setaskPermission] = useState<boolean>(false);
   const [convertCoordinates, setConvertCoordinates] = useState<boolean>(false);
   const [location, setLocation] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [metadata, setMetadata] = useState<any>(null);
   const [numberOfCameras, setNumberOfCameras] = useState(0);
   const [image, setImage] = useState<string | null>(null);
   const [showImage, setShowImage] = useState<boolean>(false);
@@ -185,26 +182,20 @@ const App = () => {
   const [torchToggled, setTorchToggled] = useState<boolean>(false);
 
   // Get mediaDevices
+  // problem: when the app starts, it will get camera access and this useEffect will start at the same time
+  // This useeffect will call locations functions automatically and cause the same problems we had.
   useEffect(() => {
     const requestCameraAccess = async () => {
-      if (counter == 0) {
-        try {
-          console.log('Access Camera...');
-          await navigator.mediaDevices.getUserMedia({ video: true });
-          const devices = await navigator.mediaDevices.enumerateDevices();
-          const videoDevices = devices.filter((i) => i.kind === 'videoinput');
-          setDevices(videoDevices);
-          setAskForLocation(true); // Proceed to ask for location access
-          setCounter(1);
-          console.log('Camera Granted');
-        } catch (err) {
-          setError('Camera access denied');
-        }
+      try {
+        const videoDevices = devices.filter((i) => i.kind === 'videoinput');
+        setDevices(videoDevices);
+        console.log('Camera Granted');
+      } catch (err) {
+        setError('Camera access denied');
       }
     };
-
     requestCameraAccess();
-  }, []);
+  }, [askPermission]);
 
   // Get Location Tags
   useEffect(() => {
@@ -214,27 +205,20 @@ const App = () => {
         return error;
       }
 
-      if (askForlocation) {
-        console.log('Accessing Location...');
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const loc = {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-            };
-            setLocation(loc);
-            setConvertCoordinates(true);
-            console.log('location set');
-          },
-          (error) => {
-            setError(`Error: ${error.message}`);
-          },
-        );
-      }
+      console.log('Accessing Location...');
+      navigator.geolocation.getCurrentPosition((position) => {
+        const loc = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        };
+        setLocation(loc);
+        setConvertCoordinates(true);
+        setaskPermission(true);
+      });
     };
 
-    getLocation();
-  }, [askForlocation]);
+    setTimeout(() => getLocation(), 3000);
+  }, []);
 
   //Converts coordinates to location (street, country, area, etc.)
 
@@ -243,14 +227,10 @@ const App = () => {
       if (convertCoordinates) {
         const query = `${location.latitude}, ${location.longitude}`;
 
-        console.log('accessing geocode...');
         opencage.geocode({ q: query, key: 'c880806970d24a4d95b99d6726f821e3' }).then((data: GeocodeResponse) => {
-          console.log('accessesd');
-
           // console.log(JSON.stringify(data));
           if (data.status.code === 200 && data.results.length > 0) {
             const place = data.results[0];
-            setFormattedLocationData(place.formatted);
             console.log(place.formatted);
             console.log(place.components.road);
             console.log(place.annotations.timezone.name);
@@ -327,6 +307,8 @@ const App = () => {
             console.log('lat/long coordinates: ', location);
             if (camera.current) {
               const photo = camera.current.takePhoto();
+              const timestamp = new Date().toISOString();
+              console.log('timestamp: ', timestamp);
               console.log(photo);
               setImage(photo as string);
               const base64URL = photo;
@@ -379,7 +361,6 @@ const App = () => {
                   const metadata = EXIF.getAllTags(initiatingBlob);
                   console.log('metadata:');
                   console.log(metadata);
-                  setMetadata(metadata); // Update the state with the extracted metadata
                 });
               }
             }
@@ -405,17 +386,6 @@ const App = () => {
             }
           }}
         />
-
-        <div>
-          {image && <img src={image} alt="Taken photo" />}
-          {metadata && (
-            <div>
-              <h3>Metadata</h3>
-              <pre>{JSON.stringify(metadata, null, 2)}</pre>
-              <p>{formattedLocationData}</p>
-            </div>
-          )}
-        </div>
       </Control>
     </Wrapper>
   );
