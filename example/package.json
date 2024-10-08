@@ -2,7 +2,7 @@
   "name": "Telegram-Camera-Mini-App",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://purple-technology.github.io/react-camera-pro",
+  "homepage": "https://robitu.github.io/Telegram-Camera-Mini-App/",
   "dependencies": {
     "exif-js": "^2.3.0",
     "node-geocoder": "^4.3.0",

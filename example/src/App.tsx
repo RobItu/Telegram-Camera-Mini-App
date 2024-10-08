@@ -186,8 +186,6 @@ const App = () => {
   console.log(`telegram username: ${user?.username || 'null'}`);
 
   // Get mediaDevices
-  // problem: when the app starts, it will get camera access and this useEffect will start at the same time
-  // This useeffect will call locations functions automatically and cause the same problems we had.
   useEffect(() => {
     const requestCameraAccess = async () => {
       try {
