@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import EXIF from 'exif-js'; // Import the EXIF library
 import piexif from 'piexifjs';
 import * as opencage from 'opencage-api-client';
+import { useTelegram } from './hooks/useTelegram';
 
 import { Camera, CameraType } from './Camera';
 
@@ -187,9 +188,11 @@ const App = () => {
   useEffect(() => {
     const requestCameraAccess = async () => {
       try {
+        const { user } = useTelegram();
         const videoDevices = devices.filter((i) => i.kind === 'videoinput');
         setDevices(videoDevices);
         console.log('Camera Granted');
+        console.log(`telegram username: ${user.username}`);
       } catch (err) {
         setError('Camera access denied');
       }
@@ -215,6 +218,7 @@ const App = () => {
         setConvertCoordinates(true);
         setaskPermission(true);
       });
+      console.log(`navigator: ${navigator.geolocation}`);
     };
 
     setTimeout(() => getLocation(), 3000);
@@ -228,7 +232,7 @@ const App = () => {
         const query = `${location.latitude}, ${location.longitude}`;
 
         opencage.geocode({ q: query, key: 'c880806970d24a4d95b99d6726f821e3' }).then((data: GeocodeResponse) => {
-          // console.log(JSON.stringify(data));
+          console.log(JSON.stringify(data));
           if (data.status.code === 200 && data.results.length > 0) {
             const place = data.results[0];
             console.log(place.formatted);
@@ -312,7 +316,6 @@ const App = () => {
               console.log(photo);
               setImage(photo as string);
               const base64URL = photo;
-              console.log(typeof base64URL);
 
               if (typeof base64URL === 'string') {
                 // Initiating geolocation tags
@@ -327,22 +330,6 @@ const App = () => {
                   gps[piexif.GPSIFD.GPSLongitude] = piexif.GPSHelper.degToDmsRational(location.longitude);
                   gps[piexif.GPSIFD.GPSLatitudeRef] = location.latitude >= 0 ? 'N' : 'S';
                   gps[piexif.GPSIFD.GPSLongitudeRef] = location.longitude >= 0 ? 'E' : 'W';
-
-                  //   const latitudeDeg = gps[piexif.GPSIFD.GPSLatitude][0][0];
-                  //   const latitudeMin = gps[piexif.GPSIFD.GPSLatitude][1][0];
-                  //   const latitudeSec = gps[piexif.GPSIFD.GPSLatitude][2][0];
-                  //   const latitudeDirection = gps[piexif.GPSIFD.GPSLatitudeRef];
-                  //   const latitudeDeg2 = gps[piexif.GPSIFD.GPSLatitude][0][1];
-                  //   const latitudeMin2 = gps[piexif.GPSIFD.GPSLatitude][1][1];
-                  //   const latitudeSec2 = gps[piexif.GPSIFD.GPSLatitude][2][1];
-
-                  //   const longitudeDeg = gps[piexif.GPSIFD.GPSLongitude][0][0];
-                  //   const longitudeMin = gps[piexif.GPSIFD.GPSLongitude][1][0];
-                  //   const longitudeSec = gps[piexif.GPSIFD.GPSLongitude][2][0];
-                  //   const longitudeDeg2 = gps[piexif.GPSIFD.GPSLongitude][0][1];
-                  //   const longitudeMin2 = gps[piexif.GPSIFD.GPSLongitude][1][1];
-                  //   const longitudeSec2 = gps[piexif.GPSIFD.GPSLongitude][2][1];
-                  //   const longitudeDirection = gps[piexif.GPSIFD.GPSLongitudeRef];
                 }
 
                 const exifObj = { '0th': zeroth, Exif: exif, GPS: gps };
@@ -359,7 +346,7 @@ const App = () => {
 
                 EXIF.getData(stringBlob, function () {
                   const metadata = EXIF.getAllTags(initiatingBlob);
-                  console.log('metadata:');
+                  console.log('metadata:'); // Do we have to inject it to the metadata? Or can we upload it separately?
                   console.log(metadata);
                 });
               }
