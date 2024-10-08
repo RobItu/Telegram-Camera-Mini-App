@@ -170,6 +170,7 @@ interface GeocodeResponse {
 }
 
 const App = () => {
+  const { user } = useTelegram();
   const [askPermission, setaskPermission] = useState<boolean>(false);
   const [convertCoordinates, setConvertCoordinates] = useState<boolean>(false);
   const [location, setLocation] = useState<any>(null);
@@ -182,17 +183,17 @@ const App = () => {
   const [activeDeviceId, setActiveDeviceId] = useState<string | undefined>(undefined);
   const [torchToggled, setTorchToggled] = useState<boolean>(false);
 
+  console.log(`telegram username: ${user?.username || 'null'}`);
+
   // Get mediaDevices
   // problem: when the app starts, it will get camera access and this useEffect will start at the same time
   // This useeffect will call locations functions automatically and cause the same problems we had.
   useEffect(() => {
     const requestCameraAccess = async () => {
       try {
-        const { user } = useTelegram();
         const videoDevices = devices.filter((i) => i.kind === 'videoinput');
         setDevices(videoDevices);
         console.log('Camera Granted');
-        console.log(`telegram username: ${user.username}`);
       } catch (err) {
         setError('Camera access denied');
       }
