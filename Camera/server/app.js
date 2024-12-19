@@ -1,4 +1,5 @@
-// server.js
+// Express API endpoint responsible for transmitting information to local PostGreSQL
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const { Pool } = require('pg');
