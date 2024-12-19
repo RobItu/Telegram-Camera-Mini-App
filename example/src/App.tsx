@@ -4,6 +4,7 @@ import EXIF from 'exif-js'; // Import the EXIF library
 import piexif from 'piexifjs';
 import * as opencage from 'opencage-api-client';
 import { useTelegram } from './hooks/useTelegram';
+import axios from 'axios';
 
 import { Camera, CameraType } from './Camera';
 
@@ -182,8 +183,7 @@ const App = () => {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [activeDeviceId, setActiveDeviceId] = useState<string | undefined>(undefined);
   const [torchToggled, setTorchToggled] = useState<boolean>(false);
-
-  console.log(`telegram username: ${user?.username || 'null'}`);
+  const [streetAddress, setStreetAddress] = useState<string>('');
 
   // Get mediaDevices
   useEffect(() => {
@@ -234,6 +234,7 @@ const App = () => {
           console.log(JSON.stringify(data));
           if (data.status.code === 200 && data.results.length > 0) {
             const place = data.results[0];
+            setStreetAddress(place.formatted);
             console.log(place.formatted);
             console.log(place.components.road);
             console.log(place.annotations.timezone.name);
@@ -255,6 +256,32 @@ const App = () => {
       bytes[i] = binaryString.charCodeAt(i);
     }
     return bytes.buffer;
+  };
+
+  //Function responsible for submitting data to a database, currently for PostgreSQL
+  //Planning on Chainlink function calling
+
+  const handleSubmit = async (
+    username: string,
+    image64URL: string | ImageData,
+    locationTags: string,
+    timestamp: string,
+  ) => {
+    try {
+      const response = await axios.post('http://localhost:3001/api/saveData', {
+        username,
+        image64URL,
+        locationTags,
+        timestamp,
+      });
+      if (response.data.success) {
+        console.log('Data saved successfully');
+      } else {
+        console.error('Failed to save data');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    }
   };
 
   return (
@@ -348,7 +375,11 @@ const App = () => {
                   console.log('metadata:'); // Do we have to inject it to the metadata? Or can we upload it separately?
                   console.log(metadata);
                 });
+                const username = user?.username || 'no username';
+                handleSubmit(username, base64URL, streetAddress, timestamp);
               }
+
+              // Send to database.
             }
           }}
         />
