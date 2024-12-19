@@ -4,7 +4,11 @@
   "private": true,
   "homepage": "https://robitu.github.io/Telegram-Camera-Mini-App/",
   "dependencies": {
+    "@chainlink/env-enc": "^1.0.5",
+    "axios": "^1.7.9",
+    "dotenv": "^16.4.7",
     "exif-js": "^2.3.0",
+    "fs": "^0.0.1-security",
     "node-geocoder": "^4.3.0",
     "opencage-api-client": "^1.0.7",
     "piexifjs": "^1.0.6",

@@ -5,7 +5,6 @@ import piexif from 'piexifjs';
 import * as opencage from 'opencage-api-client';
 import { useTelegram } from './hooks/useTelegram';
 import axios from 'axios';
-
 import { Camera, CameraType } from './Camera';
 
 const Wrapper = styled.div`
@@ -216,6 +215,7 @@ const App = () => {
         setLocation(loc);
         setConvertCoordinates(true);
         setaskPermission(true);
+        console.log(`coordinates: ${loc.latitude}, ${loc.longitude} `);
       });
       console.log(`navigator: ${navigator.geolocation}`);
     };
@@ -229,8 +229,9 @@ const App = () => {
     const coordinatesToLocation = async () => {
       if (convertCoordinates) {
         const query = `${location.latitude}, ${location.longitude}`;
+        console.log(`coordinates: ${location.latitude}, ${location.longitude}`);
 
-        opencage.geocode({ q: query, key: 'c880806970d24a4d95b99d6726f821e3' }).then((data: GeocodeResponse) => {
+        opencage.geocode({ q: query, key: process.env.REACT_APP_GEOCODE_API_KEY }).then((data: GeocodeResponse) => {
           console.log(JSON.stringify(data));
           if (data.status.code === 200 && data.results.length > 0) {
             const place = data.results[0];
