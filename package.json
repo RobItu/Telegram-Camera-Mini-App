@@ -1,5 +1,5 @@
 {
-  "name": "react-camera-pro",
+  "name": "Telegram-Camera-Mini-App",
   "description": "Universal Camera component for React. Designed with focus on Android, iOS cameras and standard webcams.",
   "version": "1.4.0",
   "main": "dist/index.cjs.js",
