@@ -6,11 +6,13 @@
   "dependencies": {
     "@chainlink/env-enc": "^1.0.5",
     "axios": "^1.7.9",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "exif-js": "^2.3.0",
     "fs": "^0.0.1-security",
     "node-geocoder": "^4.3.0",
     "opencage-api-client": "^1.0.7",
+    "pg": "^8.13.1",
     "piexifjs": "^1.0.6",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",

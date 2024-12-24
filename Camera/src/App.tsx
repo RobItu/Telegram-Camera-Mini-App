@@ -194,6 +194,7 @@ const App = () => {
   }, []);
 
   //Function responsible for submitting data to a database, currently for PostgreSQL
+  // TODO: Change express point to AWS API point.
   const handleSubmit = async (
     username: string,
     image64URL: string | ImageData,
@@ -216,6 +217,8 @@ const App = () => {
       console.error('Error:', error);
     }
   };
+
+  // TODO: Add new component to let users choose which phase they're in
 
   return (
     <Wrapper>
