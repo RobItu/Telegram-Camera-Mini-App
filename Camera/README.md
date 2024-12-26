@@ -1,5 +1,12 @@
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## IMPORTANT
+
+There are TWO `.env` files required in the Camera section.
+
+1. located in the `database` folder that's secured using Chainlink's env-enc.
+2. located in the Camera directory (the one this ReadMe is in) for React
+
 ## Available Scripts
 
 In the project directory, you can run:

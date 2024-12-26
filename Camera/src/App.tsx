@@ -193,21 +193,33 @@ const App = () => {
     setTimeout(() => getLocation(), 3000);
   }, []);
 
-  //Function responsible for submitting data to a database, currently for PostgreSQL
-  // TODO: Change express point to AWS API point.
+  /*
+   * handleSubmit function responsible for submitting metadata information to AWS Lambda
+   * AWS Lambda will in turn POST the data to RDS
+   */
+
   const handleSubmit = async (
-    username: string,
-    image64URL: string | ImageData,
+    userId: string,
     locationTags: string,
     timestamp: string,
+    image64URL: string | ImageData,
   ) => {
     try {
-      const response = await axios.post('http://localhost:3001/api/saveData', {
-        username,
-        image64URL,
-        locationTags,
-        timestamp,
-      });
+      const response = await axios.post(
+        process.env.REACT_APP_AWS_ENDPOINT!,
+        {
+          userId: userId,
+          image64URL: image64URL,
+          locationTags: locationTags,
+          timestamp: timestamp,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
       if (response.data.success) {
         console.log('Data saved successfully');
       } else {
@@ -219,6 +231,7 @@ const App = () => {
   };
 
   // TODO: Add new component to let users choose which phase they're in
+  //TODO: Hash metadata using SHA-256 when picture is taken.
 
   return (
     <Wrapper>
@@ -281,9 +294,9 @@ const App = () => {
               setImage(photo as string);
               const base64URL = photo;
 
-              const userId = user?.username || 'no username';
+              const userId = user?.username || 'reactTestUsername';
               console.log(userId);
-              handleSubmit(userId, base64URL, coordinates, timestamp);
+              handleSubmit(userId, coordinates, timestamp, base64URL);
 
               // Send to database.
             }
