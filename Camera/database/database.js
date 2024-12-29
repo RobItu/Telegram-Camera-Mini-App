@@ -26,6 +26,12 @@ const client = new Client({
     // Connect to the database
     await client.connect();
     console.log('Connected to AWS RDS PostgreSQL!');
+    // Alter table to add new column for transaction hash
+    const alterTableQuery = `
+      ALTER TABLE metadata ADD COLUMN metadata_hash VARCHAR(255);
+    `;
+    await client.query(alterTableQuery);
+    console.log('Column added successfully!');
 
     // const createTableQuery = `
     //   CREATE TABLE metadata (

@@ -193,6 +193,45 @@ const App = () => {
     setTimeout(() => getLocation(), 3000);
   }, []);
 
+  /**
+   * This function creates a SHA-256 hash of the metadata
+   * @param userId UserId obtained from Telegram
+   * @param locationTags Coordinates of where image was taken
+   * @param timestamp Timestamp of when the image was taken
+   * @param image64URL Base64URL encoding of image.
+   * @returns Hash of all parameters (metadata)
+   */
+
+  const createHash = async (
+    userId: string,
+    locationTags: string,
+    timestamp: string,
+    phase: string,
+    image64URL: string | ImageData,
+  ) => {
+    // Combine all parameters into a single string
+    const dataToHash = JSON.stringify({
+      userId,
+      locationTags,
+      timestamp,
+      phase,
+      image64URL,
+    });
+
+    // Convert string to Uint8Array
+    const encoder = new TextEncoder();
+    const data = encoder.encode(dataToHash);
+
+    // Create hash using Web Crypto API
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+
+    // Convert hash to hex string
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+
+    return hashHex;
+  };
+
   /*
    * handleSubmit function responsible for submitting metadata information to AWS Lambda
    * AWS Lambda will in turn POST the data to RDS
@@ -202,7 +241,10 @@ const App = () => {
     userId: string,
     locationTags: string,
     timestamp: string,
+    phase: string,
     image64URL: string | ImageData,
+    transaction_hash: string,
+    metadataHash: string | Promise<void>,
   ) => {
     try {
       const response = await axios.post(
@@ -212,6 +254,9 @@ const App = () => {
           image64URL: image64URL,
           locationTags: locationTags,
           timestamp: timestamp,
+          phase: phase,
+          transaction_hash: transaction_hash,
+          metadataHash: metadataHash,
         },
         {
           headers: {
@@ -230,8 +275,18 @@ const App = () => {
     }
   };
 
-  // TODO: Add new component to let users choose which phase they're in
-  //TODO: Hash metadata using SHA-256 when picture is taken.
+  //AWS
+  //TODO: Include Phase in hash
+  //TODO: Send Hash to AWS
+
+  //Chainlink Functions
+  //TODO: Add Chainlink Functions functionality
+  //TODO: CL Functions needs to return tx hash and submit to AWS
+
+  //UI
+  //TODO: Add new component to let users choose which phase they're in
+  //TODO: Add confirmation UI informing user metadata submitted when user takes picture
+  //TODO: Confirmation page for customers
 
   return (
     <Wrapper>
@@ -295,10 +350,17 @@ const App = () => {
               const base64URL = photo;
 
               const userId = user?.username || 'reactTestUsername';
-              console.log(userId);
-              handleSubmit(userId, coordinates, timestamp, base64URL);
+              const phase = 'Test: delivery phase';
+              const tx_hash = 'Test blockchain Hash: 0x123456abcdef';
 
-              // Send to database.
+              createHash(userId, coordinates, timestamp, phase, base64URL)
+                .then((hash) => {
+                  console.log(`Metadata Hash: ${hash}`);
+                  handleSubmit(userId, coordinates, timestamp, phase, base64URL, tx_hash, hash);
+                })
+                .catch((error) => {
+                  console.error(error);
+                });
             }
           }}
         />
