@@ -276,8 +276,7 @@ const App = () => {
   };
 
   //AWS
-  //TODO: Include Phase in hash
-  //TODO: Send Hash to AWS
+  //TODO: Create new table with correct column order.
 
   //Chainlink Functions
   //TODO: Add Chainlink Functions functionality
