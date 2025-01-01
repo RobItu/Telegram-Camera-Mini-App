@@ -1,11 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
-import EXIF from 'exif-js'; // Import the EXIF library
-import piexif from 'piexifjs';
-import * as opencage from 'opencage-api-client';
 import { useTelegram } from './hooks/useTelegram';
 import axios from 'axios';
-
 import { Camera, CameraType } from './Camera';
 
 const Wrapper = styled.div`
@@ -146,34 +142,9 @@ const FullScreenImagePreview = styled.div<{ image: string | null }>`
   background-position: center;
 `;
 
-interface GPSData {
-  [key: number]: any;
-}
-
-interface GeocodeResponse {
-  status: {
-    code: number;
-    message: string;
-  };
-  results: Array<{
-    formatted: string;
-    components: {
-      road?: string;
-      [key: string]: any;
-    };
-    annotations: {
-      timezone: {
-        name: string;
-      };
-    };
-  }>;
-  total_results: number;
-}
-
 const App = () => {
   const { user } = useTelegram();
   const [askPermission, setaskPermission] = useState<boolean>(false);
-  const [convertCoordinates, setConvertCoordinates] = useState<boolean>(false);
   const [location, setLocation] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [numberOfCameras, setNumberOfCameras] = useState(0);
@@ -183,7 +154,6 @@ const App = () => {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [activeDeviceId, setActiveDeviceId] = useState<string | undefined>(undefined);
   const [torchToggled, setTorchToggled] = useState<boolean>(false);
-  const [streetAddress, setStreetAddress] = useState<string>('');
 
   // Get mediaDevices
   useEffect(() => {
@@ -214,8 +184,8 @@ const App = () => {
           longitude: position.coords.longitude,
         };
         setLocation(loc);
-        setConvertCoordinates(true);
         setaskPermission(true);
+        console.log(`coordinates: ${loc.latitude}, ${loc.longitude} `);
       });
       console.log(`navigator: ${navigator.geolocation}`);
     };
@@ -223,57 +193,78 @@ const App = () => {
     setTimeout(() => getLocation(), 3000);
   }, []);
 
-  //Converts coordinates to location (street, country, area, etc.)
+  /**
+   * This function creates a SHA-256 hash of the metadata
+   * @param userId UserId obtained from Telegram
+   * @param locationTags Coordinates of where image was taken
+   * @param timestamp Timestamp of when the image was taken
+   * @param image64URL Base64URL encoding of image.
+   * @returns Hash of all parameters (metadata)
+   */
 
-  useEffect(() => {
-    const coordinatesToLocation = async () => {
-      if (convertCoordinates) {
-        const query = `${location.latitude}, ${location.longitude}`;
-
-        opencage.geocode({ q: query, key: 'c880806970d24a4d95b99d6726f821e3' }).then((data: GeocodeResponse) => {
-          console.log(JSON.stringify(data));
-          if (data.status.code === 200 && data.results.length > 0) {
-            const place = data.results[0];
-            setStreetAddress(place.formatted);
-            console.log(place.formatted);
-            console.log(place.components.road);
-            console.log(place.annotations.timezone.name);
-          } else {
-            console.log('status', data.status.message);
-            console.log('total_results', data.total_results);
-          }
-        });
-      }
-    };
-    coordinatesToLocation();
-  }, [convertCoordinates]);
-
-  const base64ToArrayBuffer = (base64: string) => {
-    const binaryString = window.atob(base64.split(',')[1]);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return bytes.buffer;
-  };
-
-  //Function responsible for submitting data to a database, currently for PostgreSQL
-  //Planning on Chainlink function calling
-
-  const handleSubmit = async (
-    username: string,
-    image64URL: string | ImageData,
+  const createHash = async (
+    userId: string,
     locationTags: string,
     timestamp: string,
+    phase: string,
+    image64URL: string | ImageData,
+  ) => {
+    // Combine all parameters into a single string
+    const dataToHash = JSON.stringify({
+      userId,
+      locationTags,
+      timestamp,
+      phase,
+      image64URL,
+    });
+
+    // Convert string to Uint8Array
+    const encoder = new TextEncoder();
+    const data = encoder.encode(dataToHash);
+
+    // Create hash using Web Crypto API
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+
+    // Convert hash to hex string
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+
+    return hashHex;
+  };
+
+  /*
+   * handleSubmit function responsible for submitting metadata information to AWS Lambda
+   * AWS Lambda will in turn POST the data to RDS
+   */
+
+  const handleSubmit = async (
+    userId: string,
+    locationTags: string,
+    timestamp: string,
+    phase: string,
+    image64URL: string | ImageData,
+    transaction_hash: string,
+    metadataHash: string | Promise<void>,
   ) => {
     try {
-      const response = await axios.post('http://localhost:3001/api/saveData', {
-        username,
-        image64URL,
-        locationTags,
-        timestamp,
-      });
+      const response = await axios.post(
+        process.env.REACT_APP_AWS_ENDPOINT!,
+        {
+          userId: userId,
+          image64URL: image64URL,
+          locationTags: locationTags,
+          timestamp: timestamp,
+          phase: phase,
+          transaction_hash: transaction_hash,
+          metadataHash: metadataHash,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
       if (response.data.success) {
         console.log('Data saved successfully');
       } else {
@@ -283,6 +274,18 @@ const App = () => {
       console.error('Error:', error);
     }
   };
+
+  //AWS
+  //TODO: Create new table with correct column order.
+
+  //Chainlink Functions
+  //TODO: Add Chainlink Functions functionality
+  //TODO: CL Functions needs to return tx hash and submit to AWS
+
+  //UI
+  //TODO: Add new component to let users choose which phase they're in
+  //TODO: Add confirmation UI informing user metadata submitted when user takes picture
+  //TODO: Confirmation page for customers
 
   return (
     <Wrapper>
@@ -327,14 +330,16 @@ const App = () => {
         <ImagePreview
           image={image}
           onClick={() => {
-            console.log('Image preview clicked'); // This line adds the console message
+            console.log('Image preview clicked');
             setShowImage(!showImage);
           }}
         />
         <TakePhotoButton
           onClick={() => {
-            console.log('Take Photo clicked'); // This line adds the console message
-            console.log('lat/long coordinates: ', location);
+            console.log('Take Photo clicked');
+            const coordinates = `${location.latitude}, ${location.longitude}`;
+            console.log('lat/long coordinates: ', coordinates);
+
             if (camera.current) {
               const photo = camera.current.takePhoto();
               const timestamp = new Date().toISOString();
@@ -343,43 +348,18 @@ const App = () => {
               setImage(photo as string);
               const base64URL = photo;
 
-              if (typeof base64URL === 'string') {
-                // Initiating geolocation tags
-                const zeroth: { [key: number]: any } = {};
-                const exif: { [key: number]: any } = {};
-                const gps: GPSData = {};
+              const userId = user?.username || 'reactTestUsername';
+              const phase = 'Test: delivery phase';
+              const tx_hash = 'Test blockchain Hash: 0x123456abcdef';
 
-                // Populating geolocation data
-
-                if (location) {
-                  gps[piexif.GPSIFD.GPSLatitude] = piexif.GPSHelper.degToDmsRational(location.latitude);
-                  gps[piexif.GPSIFD.GPSLongitude] = piexif.GPSHelper.degToDmsRational(location.longitude);
-                  gps[piexif.GPSIFD.GPSLatitudeRef] = location.latitude >= 0 ? 'N' : 'S';
-                  gps[piexif.GPSIFD.GPSLongitudeRef] = location.longitude >= 0 ? 'E' : 'W';
-                }
-
-                const exifObj = { '0th': zeroth, Exif: exif, GPS: gps };
-                const exifBytes = piexif.dump(exifObj);
-
-                // Insert EXIF metadata into the Base64 image
-                const newBase64 = piexif.insert(exifBytes, base64URL);
-
-                // base64ToArrayBuffer must pass base64URL that has the geolocation tags injected in metadata
-                const arrayBuffer = base64ToArrayBuffer(newBase64);
-
-                const initiatingBlob = new Blob([arrayBuffer]);
-                const stringBlob = initiatingBlob as unknown as string;
-
-                EXIF.getData(stringBlob, function () {
-                  const metadata = EXIF.getAllTags(initiatingBlob);
-                  console.log('metadata:'); // Do we have to inject it to the metadata? Or can we upload it separately?
-                  console.log(metadata);
+              createHash(userId, coordinates, timestamp, phase, base64URL)
+                .then((hash) => {
+                  console.log(`Metadata Hash: ${hash}`);
+                  handleSubmit(userId, coordinates, timestamp, phase, base64URL, tx_hash, hash);
+                })
+                .catch((error) => {
+                  console.error(error);
                 });
-                const username = user?.username || 'no username';
-                handleSubmit(username, base64URL, streetAddress, timestamp);
-              }
-
-              // Send to database.
             }
           }}
         />
