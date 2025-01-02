@@ -287,7 +287,6 @@ const CameraPage: React.FC<CameraPageProps> = ({ phase }) => {
   //TODO: CL Functions needs to return tx hash and submit to AWS
 
   //UI
-  //TODO: Add new component to let users choose which phase they're in
   //TODO: Add confirmation UI informing user metadata submitted when user takes picture
   //TODO: Confirmation page for customers
 
