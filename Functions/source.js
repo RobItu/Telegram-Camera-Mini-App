@@ -1,11 +1,3 @@
-const postData = {
-  hash: "12345678910abcdefghb8378e9f2ecbe1c9bd5ea7422df372e7b7545f9973c5e5a48b28df4d24af65a7",
-  location: "-40.2031, 120.3442",
-  timestamp: "01:01:01TMZ0101z",
-  imageHash:
-    "12345678910abcdefghb8378e9f2ecbe1c9bd5ea7422df372e7b7545f9973c5e5a48b28df4d24af65a712345678910abcdefghb8378e9f2ecbe1c9bd5ea7422df372e7b7545f9973c5e5a48b28df4d24af65a712345678910abcdefghb8378e9f2ecbe1c9bd5ea7422df372e7b7545f9973c5e5a48b28df4d24af65a712345678910abcdefghb8378e9f2ecbe1c9bd5ea7422df372e7b7545f9973c5e5a48b28df4d24af65a712345678910abcdefghb8378e9f2ecbe1c9bd5ea7422df372e7b7545f9973c5e5a48b28df4d24af65a712345678910abcdefghb8378e9f2ecbe1c9bd5ea7422df372e7b7545f9973c5e5a48b28df4d24af65a712345678910abcdefghb8378e9f2ecbe1c9bd5ea7422df372e7b7545f9973c5e5a48b28df4d24af65a7",
-};
-
 // Execute the API request (Promise)
 const apiResponse = await Functions.makeHttpRequest({
   url: `https://986244e2c974.ngrok.app/blockchain`,

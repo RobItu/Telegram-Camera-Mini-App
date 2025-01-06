@@ -2,7 +2,7 @@
   "name": "Telegram-Camera-Mini-App",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://robitu.github.io/Telegram-Camera-Mini-App/",
+  "homepage": ".",
   "dependencies": {
     "@chainlink/env-enc": "^1.0.5",
     "axios": "^1.7.9",
