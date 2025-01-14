@@ -162,7 +162,7 @@ const CameraPage: React.FC<CameraPageProps> = ({ phase }) => {
   const [activeDeviceId, setActiveDeviceId] = useState<string | undefined>(undefined);
   const [torchToggled, setTorchToggled] = useState<boolean>(false);
 
-  // useEffect for getting devices
+  // useEffect for getting devices //
   useEffect(() => {
     const getVideoDevices = async () => {
       try {
