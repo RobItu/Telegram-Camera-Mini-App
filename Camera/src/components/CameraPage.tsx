@@ -285,7 +285,7 @@ const CameraPage: React.FC<CameraPageProps> = ({ phase }) => {
   //TODO: Add confirmation UI informing user metadata submitted when user takes picture
   //TODO: Confirmation page for customers
 
-  //TODO: Upload to Vercel
+  //TODO: Upload to Vercel (and fix)
 
   return (
     <Wrapper>
