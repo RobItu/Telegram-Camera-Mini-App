@@ -146,12 +146,9 @@ interface CameraPageProps {
   phase: string;
 }
 
-interface CameraPageProps {
-  phase: string;
-}
-
 const CameraPage: React.FC<CameraPageProps> = ({ phase }) => {
   const { user } = useTelegram();
+  const [askPermission, setaskPermission] = useState<boolean>(false);
   const [location, setLocation] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [numberOfCameras, setNumberOfCameras] = useState(0);
@@ -162,36 +159,44 @@ const CameraPage: React.FC<CameraPageProps> = ({ phase }) => {
   const [activeDeviceId, setActiveDeviceId] = useState<string | undefined>(undefined);
   const [torchToggled, setTorchToggled] = useState<boolean>(false);
 
-  // useEffect for getting devices
+  // Get mediaDevices
   useEffect(() => {
-    const getVideoDevices = async () => {
+    const requestCameraAccess = async () => {
       try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter((i) => i.kind === 'videoinput');
         setDevices(videoDevices);
-      } catch (error) {
-        setError(`Error accessing camera devices: ${error}`);
+        console.log('Camera Granted');
+      } catch (err) {
+        setError('Camera access denied');
       }
     };
-    getVideoDevices();
+    requestCameraAccess();
+  }, [askPermission]);
+
+  // Get Location Tags
+  useEffect(() => {
+    const getLocation = async () => {
+      if (!navigator.geolocation) {
+        setError('Geolocation is not supported by your browser');
+        return error;
+      }
+
+      console.log('Accessing Location...');
+      navigator.geolocation.getCurrentPosition((position) => {
+        const loc = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        };
+        setLocation(loc);
+        setaskPermission(true);
+        console.log(`coordinates: ${loc.latitude}, ${loc.longitude} `);
+      });
+      console.log(`navigator: ${navigator.geolocation}`);
+    };
+
+    setTimeout(() => getLocation(), 3000);
   }, []);
 
-  // location access
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          });
-        },
-        () => {
-          setError(`Error getting location: ${error}`);
-        },
-      );
-    }
-  }, []);
   /**
    * This function creates a SHA-256 hash of the metadata
    * @param userId UserId obtained from Telegram
