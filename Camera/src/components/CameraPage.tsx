@@ -159,42 +159,27 @@ const CameraPage: React.FC<CameraPageProps> = ({ phase }) => {
   const [activeDeviceId, setActiveDeviceId] = useState<string | undefined>(undefined);
   const [torchToggled, setTorchToggled] = useState<boolean>(false);
 
-  // Get mediaDevices
   useEffect(() => {
-    const requestCameraAccess = async () => {
-      try {
-        const videoDevices = devices.filter((i) => i.kind === 'videoinput');
-        setDevices(videoDevices);
-        console.log('Camera Granted');
-      } catch (err) {
-        setError('Camera access denied');
-      }
-    };
-    requestCameraAccess();
-  }, [askPermission]);
+    const cameraGranted = localStorage.getItem('cameraGranted') === 'true';
+    const locationGranted = localStorage.getItem('locationGranted') === 'true';
 
-  // Get Location Tags
-  useEffect(() => {
+    if (!cameraGranted || !locationGranted) {
+      alert('Permissions missing. Please restart the app.');
+    }
+
     const getLocation = async () => {
-      if (!navigator.geolocation) {
-        setError('Geolocation is not supported by your browser');
-        return error;
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((position) => {
+          const loc = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          };
+          setLocation(loc);
+        });
       }
-
-      console.log('Accessing Location...');
-      navigator.geolocation.getCurrentPosition((position) => {
-        const loc = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        };
-        setLocation(loc);
-        setaskPermission(true);
-        console.log(`coordinates: ${loc.latitude}, ${loc.longitude} `);
-      });
-      console.log(`navigator: ${navigator.geolocation}`);
     };
 
-    setTimeout(() => getLocation(), 3000);
+    getLocation();
   }, []);
 
   /**

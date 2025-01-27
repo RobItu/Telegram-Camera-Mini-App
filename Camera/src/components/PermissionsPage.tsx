@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 
 interface PermissionsPageProps {
-  onPermissionsGranted: (phase: string) => void; // Modified to accept phase
+  onPermissionsGranted: (phase: string) => void;
 }
 
 const PermissionsPage: React.FC<PermissionsPageProps> = ({ onPermissionsGranted }) => {
-  const [cameraPermission, setCameraPermission] = useState(false);
-  const [locationPermission, setLocationPermission] = useState(false);
-  const [selectedPhase, setSelectedPhase] = useState('');
+  const [cameraPermission, setCameraPermission] = useState(localStorage.getItem('cameraGranted') === 'true');
+  const [locationPermission, setLocationPermission] = useState(localStorage.getItem('locationGranted') === 'true');
+  const [selectedPhase, setSelectedPhase] = useState(localStorage.getItem('selectedPhase') || '');
 
   const styles = {
     container: {
@@ -68,6 +68,7 @@ const PermissionsPage: React.FC<PermissionsPageProps> = ({ onPermissionsGranted 
     try {
       await navigator.mediaDevices.getUserMedia({ video: true });
       setCameraPermission(true);
+      localStorage.setItem('cameraGranted', 'true'); // Persist camera permission
     } catch {
       alert('Camera permission denied');
     }
@@ -78,6 +79,7 @@ const PermissionsPage: React.FC<PermissionsPageProps> = ({ onPermissionsGranted 
       navigator.geolocation.getCurrentPosition(
         () => {
           setLocationPermission(true);
+          localStorage.setItem('locationGranted', 'true'); // Persist location permission
         },
         () => {
           alert('Location permission denied');
