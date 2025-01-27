@@ -148,14 +148,11 @@ interface CameraPageProps {
 
 const CameraPage: React.FC<CameraPageProps> = ({ phase }) => {
   const { user } = useTelegram();
-  const [askPermission, setaskPermission] = useState<boolean>(false);
   const [location, setLocation] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
   const [numberOfCameras, setNumberOfCameras] = useState(0);
   const [image, setImage] = useState<string | null>(null);
   const [showImage, setShowImage] = useState<boolean>(false);
   const camera = useRef<CameraType>(null);
-  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [activeDeviceId, setActiveDeviceId] = useState<string | undefined>(undefined);
   const [torchToggled, setTorchToggled] = useState<boolean>(false);
 
@@ -311,11 +308,11 @@ const CameraPage: React.FC<CameraPageProps> = ({ phase }) => {
             setActiveDeviceId(event.target.value);
           }}
         >
-          {devices.map((d) => (
+          {/* {devices.map((d) => (
             <option key={d.deviceId} value={d.deviceId}>
               {d.label}
             </option>
-          ))}
+          ))} */}
         </select>
         <ImagePreview
           image={image}
