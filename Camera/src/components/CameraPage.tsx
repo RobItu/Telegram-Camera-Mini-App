@@ -146,8 +146,16 @@ interface CameraPageProps {
   phase: string;
 }
 
+declare global {
+  interface Window {
+    Telegram: any;
+  }
+}
+
 const CameraPage: React.FC<CameraPageProps> = ({ phase }) => {
   const { user } = useTelegram();
+  const tg = window.Telegram?.WebApp;
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const [location, setLocation] = useState<any>(null);
   const [numberOfCameras, setNumberOfCameras] = useState(0);
   const [image, setImage] = useState<string | null>(null);
@@ -157,12 +165,23 @@ const CameraPage: React.FC<CameraPageProps> = ({ phase }) => {
   const [torchToggled, setTorchToggled] = useState<boolean>(false);
 
   useEffect(() => {
-    const cameraGranted = localStorage.getItem('cameraGranted') === 'true';
-    const locationGranted = localStorage.getItem('locationGranted') === 'true';
+    const cameraGranted = tg?.storage.getItem('cameraGranted') === 'true';
+    const locationGranted = tg?.storage.getItem('locationGranted') === 'true';
 
     if (!cameraGranted || !locationGranted) {
       alert('Permissions missing. Please restart the app.');
     }
+
+    const startCamera = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        console.error('Failed to start the camera', error);
+      }
+    };
 
     const getLocation = async () => {
       if (navigator.geolocation) {
@@ -176,6 +195,7 @@ const CameraPage: React.FC<CameraPageProps> = ({ phase }) => {
       }
     };
 
+    startCamera();
     getLocation();
   }, []);
 
