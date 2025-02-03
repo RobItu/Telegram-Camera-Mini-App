@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import styled from 'styled-components';
 import { useTelegram } from '../hooks/useTelegram';
 import axios from 'axios';
@@ -142,21 +142,38 @@ const FullScreenImagePreview = styled.div<{ image: string | null }>`
   background-position: center;
 `;
 
-interface CameraPageProps {
-  phase: string;
-}
+const PermissionsScreen = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  background: white;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+`;
 
-declare global {
-  interface Window {
-    Telegram: any;
-  }
-}
+const PermissionButton = styled.button`
+  padding: 10px 20px;
+  margin: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+`;
 
-const CameraPage: React.FC<CameraPageProps> = ({ phase }) => {
+const CameraPage: React.FC = () => {
   const { user } = useTelegram();
-  const tg = window.Telegram?.WebApp;
-  const videoRef = useRef<HTMLVideoElement | null>(null);
   const [location, setLocation] = useState<any>(null);
+  const [locationPermission, setLocationPermission] = useState(false);
+  const [selectedPhase, setSelectedPhase] = useState('');
+  const [cameraPermission, setCameraPermission] = useState(false);
+  const [permissionsGranted, setPermissionsGranted] = useState(false);
   const [numberOfCameras, setNumberOfCameras] = useState(0);
   const [image, setImage] = useState<string | null>(null);
   const [showImage, setShowImage] = useState<boolean>(false);
@@ -164,41 +181,43 @@ const CameraPage: React.FC<CameraPageProps> = ({ phase }) => {
   const [activeDeviceId, setActiveDeviceId] = useState<string | undefined>(undefined);
   const [torchToggled, setTorchToggled] = useState<boolean>(false);
 
-  useEffect(() => {
-    const cameraGranted = tg?.storage.getItem('cameraGranted') === 'true';
-    const locationGranted = tg?.storage.getItem('locationGranted') === 'true';
-
-    if (!cameraGranted || !locationGranted) {
-      alert('Permissions missing. Please restart the app.');
+  // useEffect for getting devices
+  const requestCameraPermission = async () => {
+    try {
+      await navigator.mediaDevices.getUserMedia({ video: true });
+      setCameraPermission(true);
+    } catch (error) {
+      alert('Camera permission denied.');
     }
+  };
 
-    const startCamera = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (error) {
-        console.error('Failed to start the camera', error);
-      }
-    };
-
-    const getLocation = async () => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition((position) => {
-          const loc = {
+  // Request Location Permission
+  const requestLocationPermission = async () => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocation({
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
-          };
-          setLocation(loc);
-        });
-      }
-    };
+          });
+          setLocationPermission(true);
+        },
+        () => {
+          alert('Location permission denied.');
+        },
+      );
+    } else {
+      alert('Geolocation is not supported in this browser.');
+    }
+  };
 
-    startCamera();
-    getLocation();
-  }, []);
-
+  const confirmPermissions = () => {
+    if (cameraPermission && locationPermission && selectedPhase) {
+      setPermissionsGranted(true);
+    } else {
+      alert('Please grant all permissions and select a phase before proceeding.');
+    }
+  };
   /**
    * This function creates a SHA-256 hash of the metadata
    * @param userId UserId obtained from Telegram
@@ -292,104 +311,135 @@ const CameraPage: React.FC<CameraPageProps> = ({ phase }) => {
   //TODO: Add confirmation UI informing user metadata submitted when user takes picture
   //TODO: Confirmation page for customers
 
-  //TODO: Upload to Vercel
+  //TODO: Upload to Vercel (and fix)
 
   return (
     <Wrapper>
-      {showImage ? (
-        <FullScreenImagePreview
-          image={image}
-          onClick={() => {
-            setShowImage(!showImage);
-          }}
-        />
+      {!permissionsGranted ? (
+        /** Permissions Screen */
+        <PermissionsScreen>
+          <h1>Permissions Required</h1>
+
+          <PermissionButton onClick={requestCameraPermission} disabled={cameraPermission}>
+            {cameraPermission ? '✅ Camera Permission Granted' : 'Grant Camera Permission'}
+          </PermissionButton>
+
+          <PermissionButton onClick={requestLocationPermission} disabled={locationPermission}>
+            {locationPermission ? '✅ Location Permission Granted' : 'Grant Location Permission'}
+          </PermissionButton>
+
+          <div>
+            <label>Select Phase: </label>
+            <select value={selectedPhase} onChange={(e) => setSelectedPhase(e.target.value)}>
+              <option value="">-- Choose Phase --</option>
+              <option value="kitchen">Kitchen</option>
+              <option value="driving">Driving</option>
+              <option value="delivery_point">Delivery Point</option>
+            </select>
+          </div>
+
+          <PermissionButton
+            onClick={confirmPermissions}
+            disabled={!cameraPermission || !locationPermission || !selectedPhase}
+          >
+            Confirm & Open Camera
+          </PermissionButton>
+        </PermissionsScreen>
       ) : (
-        <Camera
-          ref={camera}
-          aspectRatio="cover"
-          facingMode="environment"
-          numberOfCamerasCallback={(i) => setNumberOfCameras(i)}
-          videoSourceDeviceId={activeDeviceId}
-          errorMessages={{
-            noCameraAccessible: 'No camera device accessible. Please connect your camera or try a different browser.',
-            permissionDenied: 'Permission denied. Please refresh and give camera permission.',
-            switchCamera:
-              'It is not possible to switch camera to different one because there is only one video device accessible.',
-            canvas: 'Canvas is not supported.',
-          }}
-          videoReadyCallback={() => {
-            console.log('Video feed ready.');
-          }}
-        />
+        /** Camera Interface */
+        <>
+          {showImage ? (
+            <FullScreenImagePreview
+              image={image}
+              onClick={() => {
+                setShowImage(!showImage);
+              }}
+            />
+          ) : (
+            <Camera
+              ref={camera}
+              aspectRatio="cover"
+              facingMode="environment"
+              numberOfCamerasCallback={(i) => setNumberOfCameras(i)}
+              videoSourceDeviceId={activeDeviceId}
+              errorMessages={{
+                noCameraAccessible:
+                  'No camera device accessible. Please connect your camera or try a different browser.',
+                permissionDenied: 'Permission denied. Please refresh and give camera permission.',
+                switchCamera:
+                  'It is not possible to switch camera to different one because there is only one video device accessible.',
+                canvas: 'Canvas is not supported.',
+              }}
+              videoReadyCallback={() => {
+                console.log('Video feed ready.');
+              }}
+            />
+          )}
+
+          <Control>
+            <select
+              onChange={(event) => {
+                setActiveDeviceId(event.target.value);
+              }}
+            ></select>
+            <ImagePreview
+              image={image}
+              onClick={() => {
+                console.log('Image preview clicked');
+                setShowImage(!showImage);
+              }}
+            />
+            <TakePhotoButton
+              onClick={() => {
+                console.log('Take Photo clicked');
+                const coordinates = `${location.latitude}, ${location.longitude}`;
+                console.log('lat/long coordinates: ', coordinates);
+
+                if (camera.current) {
+                  const photo = camera.current.takePhoto();
+                  const timestamp = new Date().toISOString();
+                  console.log('timestamp: ', timestamp);
+                  console.log(photo);
+                  setImage(photo as string);
+                  const base64URL = photo;
+
+                  const userId = user?.username || 'reactTestUsername';
+                  const tx_hash = 'Test blockchain Hash: 0x123456abcdef';
+
+                  createHash(userId, coordinates, timestamp, selectedPhase, base64URL)
+                    .then((hash) => {
+                      console.log(`Metadata Hash: ${hash}`);
+                      handleSubmit(userId, coordinates, timestamp, selectedPhase, base64URL, tx_hash, hash);
+                    })
+                    .catch((error) => {
+                      console.error(error);
+                    });
+                }
+              }}
+            />
+
+            {camera.current?.torchSupported && (
+              <TorchButton
+                className={torchToggled ? 'toggled' : ''}
+                onClick={() => {
+                  if (camera.current) {
+                    setTorchToggled(camera.current.toggleTorch());
+                  }
+                }}
+              />
+            )}
+            <ChangeFacingCameraButton
+              disabled={numberOfCameras <= 1}
+              onClick={() => {
+                if (camera.current) {
+                  const result = camera.current.switchCamera();
+                  console.log(result);
+                }
+              }}
+            />
+          </Control>
+        </>
       )}
-      <Control>
-        <select
-          onChange={(event) => {
-            setActiveDeviceId(event.target.value);
-          }}
-        >
-          {/* {devices.map((d) => (
-            <option key={d.deviceId} value={d.deviceId}>
-              {d.label}
-            </option>
-          ))} */}
-        </select>
-        <ImagePreview
-          image={image}
-          onClick={() => {
-            console.log('Image preview clicked');
-            setShowImage(!showImage);
-          }}
-        />
-        <TakePhotoButton
-          onClick={() => {
-            console.log('Take Photo clicked');
-            const coordinates = `${location.latitude}, ${location.longitude}`;
-            console.log('lat/long coordinates: ', coordinates);
-
-            if (camera.current) {
-              const photo = camera.current.takePhoto();
-              const timestamp = new Date().toISOString();
-              console.log('timestamp: ', timestamp);
-              console.log(photo);
-              setImage(photo as string);
-              const base64URL = photo;
-
-              const userId = user?.username || 'reactTestUsername';
-              const tx_hash = 'Test blockchain Hash: 0x123456abcdef';
-
-              createHash(userId, coordinates, timestamp, phase, base64URL)
-                .then((hash) => {
-                  console.log(`Metadata Hash: ${hash}`);
-                  handleSubmit(userId, coordinates, timestamp, phase, base64URL, tx_hash, hash);
-                })
-                .catch((error) => {
-                  console.error(error);
-                });
-            }
-          }}
-        />
-
-        {camera.current?.torchSupported && (
-          <TorchButton
-            className={torchToggled ? 'toggled' : ''}
-            onClick={() => {
-              if (camera.current) {
-                setTorchToggled(camera.current.toggleTorch());
-              }
-            }}
-          />
-        )}
-        <ChangeFacingCameraButton
-          disabled={numberOfCameras <= 1}
-          onClick={() => {
-            if (camera.current) {
-              const result = camera.current.switchCamera();
-              console.log(result);
-            }
-          }}
-        />
-      </Control>
     </Wrapper>
   );
 };
