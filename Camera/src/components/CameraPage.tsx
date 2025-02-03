@@ -318,6 +318,7 @@ const CameraPage: React.FC = () => {
       {!permissionsGranted ? (
         /** Permissions Screen */
         <PermissionsScreen>
+          {cameraPermission && <video autoPlay playsInline style={{ display: 'none' }} />}
           <h1>Permissions Required</h1>
 
           <PermissionButton onClick={requestCameraPermission} disabled={cameraPermission}>
